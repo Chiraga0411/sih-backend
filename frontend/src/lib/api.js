@@ -5,7 +5,7 @@
 // request/response shaping + a consistent error type.
 
 const API_BASE_URL =
-  import.meta.env.VITE_API_URL || "http://localhost:5000/api";
+  import.meta.env.VITE_API_URL || "https://sih-backend-01.onrender.com/api";
 
 export class ApiError extends Error {
   constructor(message, status, details) {

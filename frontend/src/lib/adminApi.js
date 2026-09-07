@@ -4,7 +4,7 @@
 // lib/api.js, which only talks to the public, unauthenticated citizen API.
 
 const API_BASE_URL =
-  import.meta.env.VITE_API_URL || "http://localhost:5000/api";
+  import.meta.env.VITE_API_URL || "https://sih-backend-01.onrender.com/api";
 
 const TOKEN_KEY = "nagrik_admin_token";
 const STAFF_KEY = "nagrik_admin_staff";

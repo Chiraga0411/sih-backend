@@ -20,7 +20,7 @@ npm run seed
 npm run dev
 ```
 
-The API runs at `http://localhost:5000`.
+The API runs at `https://sih-backend-01.onrender.com`.
 
 The backend loads `backend/.env` automatically. It also supports a `.env` in
 the full-stack project root when started from there. Make sure the variables
@@ -37,7 +37,7 @@ npm install
 npm run dev
 ```
 
-The frontend is configured to call `http://localhost:5000/api` through `VITE_API_URL`.
+The frontend is configured to call `https://sih-backend-01.onrender.com/api` through `VITE_API_URL`.
 
 ## AI setup
 

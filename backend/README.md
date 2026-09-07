@@ -86,12 +86,12 @@ Seeded staff logins (**change the password before any real deployment**):
 
 ```bash
 # Step 2-4: classify + check for missing fields
-curl -X POST http://localhost:5000/api/citizen/intake \
+curl -X POST https://sih-backend-01.onrender.com/api/citizen/intake \
   -H "Content-Type: application/json" \
   -d '{"text": "There is a major water leak near MG Road", "language": "en"}'
 
 # Step 5-10: confirmed submission (fill departmentId from the intake response's departmentPreview.id)
-curl -X POST http://localhost:5000/api/citizen/grievances \
+curl -X POST https://sih-backend-01.onrender.com/api/citizen/grievances \
   -H "Content-Type: application/json" \
   -d '{
     "text": "There is a major water leak near MG Road",
@@ -103,17 +103,17 @@ curl -X POST http://localhost:5000/api/citizen/grievances \
   }'
 
 # Track it
-curl http://localhost:5000/api/citizen/grievances/<complaintId>
+curl https://sih-backend-01.onrender.com/api/citizen/grievances/<complaintId>
 ```
 
 ### Try the staff flow
 
 ```bash
-TOKEN=$(curl -s -X POST http://localhost:5000/api/admin/auth/login \
+TOKEN=$(curl -s -X POST https://sih-backend-01.onrender.com/api/admin/auth/login \
   -H "Content-Type: application/json" \
   -d '{"email":"admin@nagriksahayak.gov.in","password":"ChangeMe123!"}' | jq -r .token)
 
-curl http://localhost:5000/api/admin/grievances -H "Authorization: Bearer $TOKEN"
+curl https://sih-backend-01.onrender.com/api/admin/grievances -H "Authorization: Bearer $TOKEN"
 ```
 
 ### SLA escalation & re-escalation (Step 13)
