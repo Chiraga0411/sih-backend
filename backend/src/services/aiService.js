@@ -1,12 +1,17 @@
 // src/services/aiService.js
 // Gemini-backed AI integration for complaint classification, entity extraction,
-// translation, and voice transcription.
+// and translation. Voice transcription runs on Groq's hosted Whisper
+// (whisper-large-v3) instead — see transcribeVoice() below. Whisper only
+// converts audio to text, so it cannot replace the classification/translation
+// calls; those stay on Gemini.
 
 import axios from "axios";
+import FormData from "form-data";
 import Department from "../models/Department.js";
 import env from "../config/env.js";
 
 const GEMINI_ENDPOINT = `https://generativelanguage.googleapis.com/v1beta/models/${env.gemini.model}:generateContent`;
+const GROQ_TRANSCRIPTION_ENDPOINT = "https://api.groq.com/openai/v1/audio/transcriptions";
 
 const ALLOWED_DEPARTMENTS = new Set([
   "WATER",
@@ -58,65 +63,54 @@ async function generateGeminiJson(prompt) {
 }
 
 // ============================================================
-// GEMINI AUDIO
+// GROQ WHISPER AUDIO (replaces Gemini for transcription only)
 // ============================================================
+// Whisper is a pure speech-to-text model: audio in, transcript out. There
+// is no "prompt" instructing it not to summarize/translate the way the old
+// Gemini prompt did — Whisper just transcribes, so those instructions are
+// gone because they're not needed anymore, not because they were dropped
+// by mistake.
 
-async function generateGeminiAudioText(audioBuffer, mimeType, prompt) {
-  if (!env.gemini.apiKey) return null;
+async function generateGroqTranscription(
+  audioBuffer,
+  filename,
+  mimeType,
+  languageHint
+) {
+  if (!env.groq.apiKey) return null;
+
+  const form = new FormData();
+  form.append("file", audioBuffer, { filename, contentType: mimeType });
+  form.append("model", env.groq.model);
+  form.append("temperature", "0");
+  form.append("response_format", "json");
+
+  // Whisper wants a bare ISO-639-1 code ("hi", "en", ...). Passing it
+  // improves accuracy and speed; skip it if we ever get something else.
+  if (languageHint && languageHint.length === 2) {
+    form.append("language", languageHint);
+  }
 
   let data;
 
   try {
-    ({ data } = await axios.post(
-      GEMINI_ENDPOINT,
-      {
-        contents: [
-          {
-            role: "user",
-            parts: [
-              {
-                inlineData: {
-                  mimeType,
-                  data: audioBuffer.toString("base64"),
-                },
-              },
-              {
-                text: prompt,
-              },
-            ],
-          },
-        ],
-        generationConfig: {
-          temperature: 0,
-        },
+    ({ data } = await axios.post(GROQ_TRANSCRIPTION_ENDPOINT, form, {
+      headers: {
+        ...form.getHeaders(),
+        Authorization: `Bearer ${env.groq.apiKey}`,
       },
-      {
-        params: {
-          key: env.gemini.apiKey,
-        },
-        timeout: env.gemini.timeoutMs,
-      }
-    ));
+      timeout: env.groq.timeoutMs,
+    }));
   } catch (err) {
     const providerMessage =
       err.response?.data?.error?.message || err.message;
 
-    console.error("[aiService] Gemini audio API error:", providerMessage);
+    console.error("[aiService] Groq Whisper API error:", providerMessage);
 
     throw new Error(providerMessage);
   }
 
-  const raw =
-    data?.candidates?.[0]?.content?.parts
-      ?.map((part) => part.text || "")
-      .join("") || "";
-
-  const cleaned = raw
-    .replace(/^```(?:json)?\s*/i, "")
-    .replace(/\s*```$/i, "")
-    .trim();
-
-  return cleaned || null;
+  return typeof data?.text === "string" ? data.text.trim() : null;
 }
 
 // ============================================================
@@ -129,9 +123,9 @@ export async function transcribeVoice(
   languageHint = "hi",
   uploadedMimeType = ""
 ) {
-  if (!env.gemini.apiKey) {
+  if (!env.groq.apiKey) {
     console.warn(
-      "[aiService] GEMINI_API_KEY not set — voice intake is unavailable."
+      "[aiService] GROQ_API_KEY not set — voice intake is unavailable."
     );
 
     return {
@@ -139,7 +133,7 @@ export async function transcribeVoice(
       confidence: 0,
       language: languageHint,
       degraded: true,
-      error: "GEMINI_API_KEY is not configured",
+      error: "GROQ_API_KEY is not configured",
     };
   }
 
@@ -186,34 +180,18 @@ export async function transcribeVoice(
     }
 
     // ----------------------------------------------------------
-    // Gemini transcription prompt
+    // Groq Whisper transcription
     // ----------------------------------------------------------
 
-    const prompt = `
-Transcribe this citizen voice complaint exactly.
-
-Expected language: ${languageHint}.
-
-Rules:
-- Return only the spoken transcript.
-- Do not summarize.
-- Do not translate.
-- Do not invent words.
-- Do not add JSON.
-- Do not add markdown.
-- Do not add labels.
-- Do not add explanations.
-- Preserve names, places, numbers, and important details.
-`;
-
-    const transcript = await generateGeminiAudioText(
+    const transcript = await generateGroqTranscription(
       audioBuffer,
+      filename,
       mimeType,
-      prompt
+      languageHint
     );
 
     if (!transcript) {
-      throw new Error("Gemini returned no transcript");
+      throw new Error("Whisper returned no transcript");
     }
 
     console.log("[aiService] Voice transcription successful:", {
@@ -229,7 +207,7 @@ Rules:
     };
   } catch (err) {
     console.error(
-      `[aiService] Gemini voice transcription failed: ${err.message}`
+      `[aiService] Groq voice transcription failed: ${err.message}`
     );
 
     return {
