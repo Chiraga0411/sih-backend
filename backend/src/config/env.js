@@ -45,6 +45,15 @@ export const env = {
     timeoutMs: Number(process.env.GEMINI_TIMEOUT_MS) || 10000,
   },
 
+  // Voice transcription only. Classification/translation stay on Gemini
+  // above — Whisper (via Groq) cannot do those, it only turns audio into
+  // text. See aiService.js transcribeVoice().
+  groq: {
+    apiKey: process.env.GROQ_API_KEY || null,
+    model: process.env.GROQ_WHISPER_MODEL || 'whisper-large-v3',
+    timeoutMs: Number(process.env.GROQ_TIMEOUT_MS) || 15000,
+  },
+
   upload: {
     maxAudioMb: Number(process.env.MAX_AUDIO_UPLOAD_MB) || 10,
   },
