@@ -1,0 +1,36 @@
+{
+  "name": "nagrik-sahayak-backend",
+  "version": "1.0.0",
+  "description": "SIH1516 - Nagrik Sahayak: Multilingual Grievance Lodging & Tracking backend (Node.js/Express/MongoDB)",
+  "type": "module",
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "nodemon server.js",
+    "seed": "node scripts/seed.js"
+  },
+  "dependencies": {
+    "axios": "^1.7.7",
+    "bcryptjs": "^2.4.3",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.5",
+    "express": "^4.19.2",
+    "express-rate-limit": "^7.4.0",
+    "express-validator": "^7.1.0",
+    "form-data": "^4.0.0",
+    "helmet": "^7.1.0",
+    "jsonwebtoken": "^9.0.2",
+    "mongoose": "^8.4.1",
+    "morgan": "^1.10.0",
+    "multer": "^2.0.0",
+    "node-cron": "^3.0.3",
+    "twilio": "^5.3.0",
+    "uuid": "^9.0.1"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.0"
+  }
+}
